@@ -4,10 +4,10 @@
  * The registry still holds one tool per documented endpoint — 179 of them — but
  * projecting all 179 into `tools/list` costs about 55k tokens of every context,
  * and two thirds of that is argument schemas an agent needs one at a time. So
- * the endpoints are exposed as *data* instead: `tracker_api` names them all in
- * its description and hands out a schema on request, `tracker_read` and
- * `tracker_call` run them. Same endpoints, same arguments, same responses, ~6k
- * tokens standing cost.
+ * the endpoints are exposed as *data* instead: `tracker_api` indexes the
+ * sections in its description and hands out a section's endpoint lines or an
+ * endpoint's schema on request, `tracker_read` and `tracker_call` run them. Same
+ * endpoints, same arguments, same responses, under 1k tokens standing cost.
  *
  * Two dispatchers rather than one because `effect` has to survive as MCP
  * annotations: a host gives `tracker_read` a standing permission and confirms
@@ -51,27 +51,43 @@ function signatureOf(def: ToolDef): string {
 }
 
 /**
- * Every endpoint as one line, grouped by documentation section.
+ * One endpoint as one catalogue line.
  *
- * This is what replaces 179 tool definitions, so it carries exactly what
- * choosing an endpoint takes: the name and required arguments, what it does, and
- * — as a `(read)` mark — which dispatcher runs it. The optional arguments are
- * spelled as the API spells them and are left to `tracker_api`: listing them
- * too would more than double what the signatures cost, for names the
- * documentation page already teaches.
+ * This is what replaces a tool definition, so it carries exactly what choosing
+ * an endpoint takes: the name and required arguments, what it does, and — as a
+ * `(read)` mark — which dispatcher runs it. The optional arguments are spelled
+ * as the API spells them and are left to the schema: listing them too would
+ * more than double what the signatures cost, for names the documentation page
+ * already teaches.
  */
+function catalogueLine(def: ToolDef): string {
+  const mark = def.effect === "read" ? " (read)" : "";
+  return `${def.name}${signatureOf(def)}${mark} — ${summaryOf(def)}`;
+}
+
+/** Every endpoint as one line, grouped by documentation section. */
 export function renderCatalogue(only?: readonly string[]): string {
   const lines: string[] = [];
   for (const section of sections) {
     if (only && !only.includes(section.id)) continue;
     lines.push(`## ${section.id} — ${section.tools.length} endpoints`, section.blurb);
-    for (const def of section.tools) {
-      const mark = def.effect === "read" ? " (read)" : "";
-      lines.push(`${def.name}${signatureOf(def)}${mark} — ${summaryOf(def)}`);
-    }
-    lines.push("");
+    lines.push(...section.tools.map(catalogueLine), "");
   }
   return lines.join("\n").trimEnd();
+}
+
+/**
+ * The sections alone, one line each — what `tracker_api`'s description carries.
+ *
+ * Not the whole catalogue: hosts cut a tool description short (Claude Code at
+ * 2048 characters), and the 18 KB catalogue lost everything after the first
+ * seventeen issue endpoints — agents concluded that uploads did not exist.
+ * `tracker_api` hands the lines of a section out on request instead.
+ */
+function renderIndex(): string {
+  return sections
+    .map((section) => `${section.id} (${section.tools.length}) — ${section.blurb}`)
+    .join("\n");
 }
 
 /** One endpoint, fully: where it goes, how it is called, what it takes. */
@@ -92,7 +108,7 @@ export function describeTool(def: ToolDef): Record<string, unknown> {
 }
 
 function unknownEndpoint(name: string): string {
-  return `Unknown endpoint "${name}". Every name is listed in the description of tracker_api.`;
+  return `Unknown endpoint "${name}". List a section with tracker_api to see every name.`;
 }
 
 /**
@@ -145,29 +161,48 @@ const ARGS_ARG = z
 export const dispatchTools: readonly ToolDef<() => Tracker>[] = [
   tool({
     name: "tracker_api",
-    description: `Look up the arguments of Yandex Tracker endpoints. Every endpoint this server covers is listed below with its required arguments in parentheses, \`…\` marking optional ones; ask this tool for the ones you intend to call — several at once — and you get their JSON Schema (optional arguments included), HTTP method and documentation URL back.
+    description: `Find Yandex Tracker endpoints and their arguments. The endpoints are grouped into the sections below (endpoint count in parentheses).
 
-Then run the endpoint: the ones marked \`(read)\` through tracker_read, all others through tracker_call.
+1. Pass \`sections\` to list a section's endpoints: one line each, required arguments in parentheses, \`…\` marking optional ones.
+2. Pass \`tools\` — several at once — to get those endpoints' JSON Schema (optional arguments included), HTTP method and documentation URL.
+3. Run an endpoint marked \`(read)\` through tracker_read, any other through tracker_call.
 
-${renderCatalogue()}`,
+${renderIndex()}`,
     effect: "read",
     input: {
+      sections: z
+        .array(z.enum(sections.map((section) => section.id)))
+        .min(1)
+        .optional()
+        .describe("Sections whose endpoints to list."),
       tools: z
         .array(TOOL_ARG)
         .min(1)
+        .optional()
         .describe("Endpoint names to describe. Ask for every endpoint you plan to use at once."),
     },
-    // One unknown name costs only its own entry, not the schemas asked for with it.
-    run: async (_tracker, { tools }) =>
-      tools.map((name) => {
-        const def = toolsByName.get(name);
-        return def ? describeTool(def) : { tool: name, error: unknownEndpoint(name) };
-      }),
+    run: async (_tracker, a) => {
+      if (!a.sections && !a.tools) throw new Error("Pass `sections`, `tools`, or both.");
+      return {
+        catalogue: a.sections
+          ? Object.fromEntries(
+              sections
+                .filter((section) => a.sections?.includes(section.id))
+                .map((section) => [section.id, section.tools.map(catalogueLine)]),
+            )
+          : undefined,
+        // One unknown name costs only its own entry, not the schemas asked for with it.
+        schemas: a.tools?.map((name) => {
+          const def = toolsByName.get(name);
+          return def ? describeTool(def) : { tool: name, error: unknownEndpoint(name) };
+        }),
+      };
+    },
   }),
 
   tool({
     name: "tracker_read",
-    description: `Call a Yandex Tracker endpoint that only reads. Accepts the endpoints marked \`(read)\` in the catalogue in tracker_api's description; anything that writes goes through tracker_call.
+    description: `Call a Yandex Tracker endpoint that only reads. Accepts the endpoints marked \`(read)\` in tracker_api's listing; anything that writes goes through tracker_call.
 
 ${RETURNS} Trim a large response with the endpoint's own \`fields\` and \`expand\` arguments.`,
     effect: "read",
@@ -177,7 +212,7 @@ ${RETURNS} Trim a large response with the endpoint's own \`fields\` and \`expand
 
   tool({
     name: "tracker_call",
-    description: `Call a Yandex Tracker endpoint that creates, edits or deletes something. Accepts every endpoint *not* marked \`(read)\` in the catalogue in tracker_api's description.
+    description: `Call a Yandex Tracker endpoint that creates, edits or deletes something. Accepts every endpoint *not* marked \`(read)\` in tracker_api's listing.
 
 Get the arguments from tracker_api first — this is the tool that changes data, and a wrong field name is rejected rather than dropped. ${RETURNS} A download returns where the file landed instead.`,
     effect: "modify",

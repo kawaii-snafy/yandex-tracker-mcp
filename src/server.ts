@@ -8,7 +8,7 @@ import { registerResources } from "./resources.ts";
 import type { ToolEffect } from "./tool.ts";
 
 export const SERVER_NAME = "yandex-tracker-mcp";
-export const SERVER_VERSION = "1.1.0";
+export const SERVER_VERSION = "1.2.0";
 
 /**
  * How a tool's effect reads as MCP annotations.

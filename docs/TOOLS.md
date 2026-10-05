@@ -34,18 +34,20 @@ endpoint, but putting all 179 in `tools/list` costs ~55k tokens of every context
 — two thirds of it argument schemas an agent needs one at a time — so the
 endpoints are exposed as data and three tools operate on them:
 
-| Tool           | Arguments                  | Returns                                                                                        |
-| -------------- | -------------------------- | ---------------------------------------------------------------------------------------------- |
-| `tracker_api`  | `tools`: names to describe | For each: its endpoint, doc URL, which dispatcher to use, and the JSON Schema of its arguments |
-| `tracker_read` | `tool`, `args`             | `{headers, body}` of the endpoint's response. Accepts `read` endpoints only                    |
-| `tracker_call` | `tool`, `args`             | `{headers, body}` of the endpoint's response. Accepts `create` and `modify` endpoints          |
+| Tool           | Arguments           | Returns                                                                                                                |
+| -------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `tracker_api`  | `sections`, `tools` | `catalogue`: each section's endpoint lines; `schemas`: for each tool its endpoint, doc URL, dispatcher and JSON Schema |
+| `tracker_read` | `tool`, `args`      | `{headers, body}` of the endpoint's response. Accepts `read` endpoints only                                            |
+| `tracker_call` | `tool`, `args`      | `{headers, body}` of the endpoint's response. Accepts `create` and `modify` endpoints                                  |
 
-`tracker_api`'s own description carries the catalogue: every endpoint name with
-its required arguments and a one-line summary, grouped by section,
-`(read)`-marked where `tracker_read` is the way in —
+`tracker_api`'s own description carries only the section index — hosts cut a
+tool description at about 2 KB, and the whole catalogue is 18 KB. Ask it for
+`sections` to get the catalogue lines: every endpoint name with its required
+arguments and a one-line summary, `(read)`-marked where `tracker_read` is the way
+in —
 `tracker_get_issue(issueId, …) (read) — Get the parameters of one issue.`, where
-`…` stands for optional arguments. So an agent sees all 179 from the start and pays for a schema only when it
-means to call something. Ask for every schema you need in one call.
+`…` stands for optional arguments. So an agent pays for a section's list only when it works in that section, and
+for a schema only when it means to call something. Ask for every schema you need in one call.
 
 The split into two dispatchers preserves the MCP annotations a host acts on:
 `tracker_read` is `readOnlyHint` and can be granted a standing permission,

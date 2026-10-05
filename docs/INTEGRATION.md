@@ -53,7 +53,7 @@ Add to `~/.codex/config.toml`:
 command = "npx"
 args = [
   "-y",
-  "https://github.com/kawaii-snafy/yandex-tracker-mcp/releases/download/v1.1.0/yandex-tracker-mcp.tgz",
+  "https://github.com/kawaii-snafy/yandex-tracker-mcp/releases/download/v1.2.0/yandex-tracker-mcp.tgz",
 ]
 
 [mcp_servers.yandex-tracker.env]
@@ -73,7 +73,7 @@ claude mcp add --transport stdio \
   --env YANDEX_TRACKER_TOKEN="..." \
   --env YANDEX_TRACKER_CLOUD_ORG_ID="..." \
   yandex-tracker \
-  -- npx -y https://github.com/kawaii-snafy/yandex-tracker-mcp/releases/download/v1.1.0/yandex-tracker-mcp.tgz
+  -- npx -y https://github.com/kawaii-snafy/yandex-tracker-mcp/releases/download/v1.2.0/yandex-tracker-mcp.tgz
 ```
 
 Verify with `claude mcp list`, `claude mcp get yandex-tracker`, and `/mcp`
@@ -81,7 +81,7 @@ inside the session. For a non-cloud org swap in `YANDEX_TRACKER_ORG_ID`.
 
 ### Any MCP host
 
-Point the host at `npx -y https://github.com/kawaii-snafy/yandex-tracker-mcp/releases/download/v1.1.0/yandex-tracker-mcp.tgz`
+Point the host at `npx -y https://github.com/kawaii-snafy/yandex-tracker-mcp/releases/download/v1.2.0/yandex-tracker-mcp.tgz`
 — the archive attached to a GitHub release — or, from a clone, at
 `node build/cli.js` after `npm run build`. For unreleased code,
 `npx -y github:kawaii-snafy/yandex-tracker-mcp` installs from the repository and
@@ -120,7 +120,7 @@ MCP requires the `initialize` handshake before any other request, so pipe it
   '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
   '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'
   sleep 5
-} | YANDEX_TRACKER_TOKEN="..." YANDEX_TRACKER_CLOUD_ORG_ID="..." npx -y https://github.com/kawaii-snafy/yandex-tracker-mcp/releases/download/v1.1.0/yandex-tracker-mcp.tgz
+} | YANDEX_TRACKER_TOKEN="..." YANDEX_TRACKER_CLOUD_ORG_ID="..." npx -y https://github.com/kawaii-snafy/yandex-tracker-mcp/releases/download/v1.2.0/yandex-tracker-mcp.tgz
 ```
 
 The trailing `sleep` keeps stdin open: `printf` alone closes it immediately and
@@ -129,7 +129,7 @@ then get only the `initialize` reply.
 
 `tools/list` needs no credentials, so it is the safest first check — a healthy
 server returns a JSON-RPC object listing `tracker_api`, `tracker_read` and
-`tracker_call`, the first of them carrying the whole endpoint catalogue in its
+`tracker_call`, the first of them carrying the section index in its
 description. `tracker_api` itself needs no token either; the first call that
 actually touches Tracker (e.g. `tracker_read` with `tracker_get_myself`) will
 exercise the token and org id.
@@ -139,7 +139,7 @@ exercise the token and org id.
 | Symptom                                                                                     | Likely cause                                                                                                                                                                                          |
 | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Tool result with `isError: true`, "Set YANDEX_TRACKER_TOKEN…"                               | Token or org id missing from the host's env for this server.                                                                                                                                          |
-| `isError: true`, `Unknown endpoint "…"`                                                     | The name is not in the registry. Every one is listed in `tracker_api`'s description and under `tracker://api`.                                                                                        |
+| `isError: true`, `Unknown endpoint "…"`                                                     | The name is not in the registry. Every one is listed by `tracker_api` with `sections` and under `tracker://api`.                                                                                      |
 | `isError: true`, `"…" is a create endpoint — call it with tracker_call`                     | Right endpoint, wrong dispatcher. `(read)` in the catalogue means `tracker_read`; everything else is `tracker_call`.                                                                                  |
 | `isError: true`, `Invalid arguments for …`                                                  | An argument missing, mistyped, or not in the endpoint's schema — an unknown key is rejected rather than dropped. Get the schema from `tracker_api`.                                                   |
 | `isError: true` with `Yandex Tracker API error <status>`                                    | The request reached Tracker but came back non-2xx (auth, permissions, missing issue).                                                                                                                 |

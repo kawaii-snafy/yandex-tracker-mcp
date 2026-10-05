@@ -22,8 +22,8 @@
   module in `sections` — one place, read by the catalogue, the `tracker://api`
   resource and the `docs/TOOLS.md` generator alike.
 - **The host sees three tools, not 179.** `src/dispatch.ts` projects the registry:
-  `tracker_api` carries the catalogue in its description and hands out argument
-  schemas on request, `tracker_read` runs the `read` endpoints and `tracker_call`
+  `tracker_api` indexes the sections in its description and hands out a
+  section's catalogue lines and argument schemas on request, `tracker_read` runs the `read` endpoints and `tracker_call`
   the rest. Registering all 179 cost ~55k tokens of every context, two thirds of
   it argument schemas needed one at a time. A new endpoint still goes in
   `src/tools/` and appears in the catalogue automatically — never add a tool

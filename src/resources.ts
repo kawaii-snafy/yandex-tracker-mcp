@@ -32,7 +32,7 @@ const DICTIONARIES = [
 ] as const;
 
 export function registerResources(server: McpServer, tracker: () => Tracker): void {
-  // The same catalogue `tracker_api` carries in its description, reachable by a
+  // The same catalogue `tracker_api` hands out by section, reachable by a
   // person: `tracker://api` for all of it, `tracker://api/queues` for one
   // section. Nothing here reaches Tracker — it is the registry, rendered.
   server.registerResource(

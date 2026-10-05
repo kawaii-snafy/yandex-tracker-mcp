@@ -18,15 +18,15 @@ Those 179 do not go on the wire as 179 MCP tools, which would cost every
 conversation ~55k tokens of argument schemas before a word is said. Three tools
 do:
 
-| Tool           | What it is for                                                                       |
-| -------------- | ------------------------------------------------------------------------------------ |
-| `tracker_api`  | The catalogue: every endpoint named in its description, argument schemas on request. |
-| `tracker_read` | Call an endpoint that only reads.                                                    |
-| `tracker_call` | Call an endpoint that creates, edits or deletes.                                     |
+| Tool           | What it is for                                                                     |
+| -------------- | ---------------------------------------------------------------------------------- |
+| `tracker_api`  | The catalogue: sections in its description, endpoint lists and schemas on request. |
+| `tracker_read` | Call an endpoint that only reads.                                                  |
+| `tracker_call` | Call an endpoint that creates, edits or deletes.                                   |
 
-An agent reads the catalogue, asks `tracker_api` for the schemas it needs, then
-calls. Same endpoints, same argument names, same responses — **~5.8k tokens**
-standing cost instead of 55k. The split between the two dispatchers is what keeps
+An agent picks a section, asks `tracker_api` for its endpoints and then for the
+schemas it needs, then calls. Same endpoints, same argument names, same
+responses — **under 1k tokens** standing cost instead of 55k. The split between the two dispatchers is what keeps
 reads cheap in a host: `tracker_read` is annotated read-only and can be granted a
 standing permission, `tracker_call` is flagged destructive and gets confirmed.
 
@@ -40,10 +40,10 @@ The package is not on npm. Every [release](https://github.com/kawaii-snafy/yande
 carries it as an archive, and `npx` runs it from there:
 
 ```sh
-npx -y https://github.com/kawaii-snafy/yandex-tracker-mcp/releases/download/v1.1.0/yandex-tracker-mcp.tgz
+npx -y https://github.com/kawaii-snafy/yandex-tracker-mcp/releases/download/v1.2.0/yandex-tracker-mcp.tgz
 ```
 
-Change `v1.1.0` in the URL to move to another release. The archive is already
+Change `v1.2.0` in the URL to move to another release. The archive is already
 compiled, so the install is the package and its two dependencies — no `git`, no
 build.
 
@@ -65,7 +65,7 @@ Add the server to `~/.codex/config.toml`:
 command = "npx"
 args = [
   "-y",
-  "https://github.com/kawaii-snafy/yandex-tracker-mcp/releases/download/v1.1.0/yandex-tracker-mcp.tgz",
+  "https://github.com/kawaii-snafy/yandex-tracker-mcp/releases/download/v1.2.0/yandex-tracker-mcp.tgz",
 ]
 
 [mcp_servers.yandex-tracker.env]
@@ -97,7 +97,7 @@ claude mcp add --transport stdio \
   --env YANDEX_TRACKER_TOKEN="..." \
   --env YANDEX_TRACKER_CLOUD_ORG_ID="..." \
   yandex-tracker \
-  -- npx -y https://github.com/kawaii-snafy/yandex-tracker-mcp/releases/download/v1.1.0/yandex-tracker-mcp.tgz
+  -- npx -y https://github.com/kawaii-snafy/yandex-tracker-mcp/releases/download/v1.2.0/yandex-tracker-mcp.tgz
 ```
 
 For a non-cloud organization, use `--env YANDEX_TRACKER_ORG_ID="..."` instead
@@ -138,7 +138,7 @@ notification) first:
   '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
   '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'
   sleep 5
-} | YANDEX_TRACKER_TOKEN="..." YANDEX_TRACKER_CLOUD_ORG_ID="..." npx -y https://github.com/kawaii-snafy/yandex-tracker-mcp/releases/download/v1.1.0/yandex-tracker-mcp.tgz
+} | YANDEX_TRACKER_TOKEN="..." YANDEX_TRACKER_CLOUD_ORG_ID="..." npx -y https://github.com/kawaii-snafy/yandex-tracker-mcp/releases/download/v1.2.0/yandex-tracker-mcp.tgz
 ```
 
 The trailing `sleep` keeps stdin open: `printf` alone closes it immediately and
@@ -181,7 +181,7 @@ Set the version in `package.json` and `SERVER_VERSION` in `src/server.ts`, merge
 then tag and push the tag:
 
 ```sh
-git tag v1.1.0 && git push origin v1.1.0
+git tag v1.2.0 && git push origin v1.2.0
 ```
 
 `.github/workflows/release.yml` checks that the tag and both versions agree,

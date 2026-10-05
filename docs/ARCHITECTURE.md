@@ -139,14 +139,16 @@ So the endpoints are exposed as **data**:
 - `renderCatalogue()` turns `sections` into one line per endpoint — name, required
   arguments, `(read)` mark, summary:
   `tracker_get_issue(issueId, …) (read) — Get the parameters of one issue.`
-  18 KB ≈ 5k tokens for all 179, and it is interpolated straight into
-  `tracker_api`'s description, so an agent sees every endpoint from the first
-  message. The required arguments are there because nearly all of them are path
+  18 KB ≈ 5k tokens for all 179 — too much for a tool description, which hosts
+  cut at about 2 KB (Claude Code at 2048 characters: agents saw seventeen issue
+  endpoints and concluded the rest did not exist). So `tracker_api`'s
+  description carries only `renderIndex()` — one line per section — and
+  `tracker_api` with `sections` returns those sections' lines. The required arguments are there because nearly all of them are path
   placeholders — the one kind of name the server makes up (`<issue_ID>` →
   `issueId`) — and an agent that cannot see them guesses `issue_id`. The
   optional ones keep the API's spelling and stay in the schema; `…` says there
   are some, so `()` only ever means "takes nothing".
-- `describeTool()` answers `tracker_api`: the endpoint line, the doc URL, which
+- `describeTool()` answers `tracker_api` with `tools`: the endpoint line, the doc URL, which
   dispatcher to use, and `z.toJSONSchema(z.strictObject(def.input))` — the schema
   the SDK used to advertise, produced on request instead, and strict because
   `invoke()` is. An unknown name costs only its own entry: `tracker_api` answers
@@ -162,14 +164,15 @@ So the endpoints are exposed as **data**:
   silently would send a request quietly missing a value — validation moved from
   the MCP boundary to here, so it has to be the stricter kind.
 
-The standing cost is ~22 KB ≈ 5.8k tokens, and the registry itself is untouched:
+The standing cost is under 3 KB of descriptions, and the registry itself is untouched:
 still one tool per documented endpoint, still the same `ToolDef`, still generated
 into [TOOLS.md](TOOLS.md). What changed is only how many of them are projected
 into `tools/list`.
 
-The cost is one extra round-trip before the first call to an endpoint whose schema
-is not in context yet. `tracker_api` takes a list of names for that reason — an
-agent that knows it needs four endpoints pays for one call, not four.
+The cost is a round-trip or two before the first call to an endpoint whose
+schema is not in context yet. `tracker_api` takes lists of sections and names
+for that reason, and both at once — an agent that knows it needs four endpoints
+pays for one call, not four.
 
 ### Client lifecycle
 
@@ -192,9 +195,8 @@ Resources are a **user**-facing surface: in Claude Code the user `@`-mentions on
 (e.g. `@yandex-tracker:tracker://issue/TEST-123`) to attach it as context. The
 agent does not read them autonomously mid-task — `tracker_api` and the two
 dispatchers remain its path to the same data, so resources are additive, never a
-replacement. That asymmetry is also why the catalogue lives in a tool description
-rather than only in `tracker://api`: an agent would never read the resource on its
-own.
+replacement. That asymmetry is also why the catalogue is served by a tool rather
+than only by `tracker://api`: an agent would never read the resource on its own.
 
 ## HTTP client layer
 

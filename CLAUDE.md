@@ -117,9 +117,10 @@ Six cross-cutting mechanisms to know before editing:
   `input` is a Zod shape; `tool()` infers the type of `run`'s `args` from it, so
   nothing is annotated by hand. The registry is read by `src/dispatch.ts`, by
   `src/resources.ts` and by `scripts/gen-tools-doc.ts` alike.
-- **The registry is projected, not registered.** `src/dispatch.ts` renders every
-  endpoint as one catalogue line inside `tracker_api`'s description, answers
-  `tracker_api` with `z.toJSONSchema` of the endpoint's `input`, and runs the
+- **The registry is projected, not registered.** `src/dispatch.ts` puts the section
+  index in `tracker_api`'s description (hosts truncate descriptions at ~2 KB, so
+  never the full catalogue), answers `tracker_api` with a section's catalogue
+  lines or `z.toJSONSchema` of the endpoint's `input`, and runs the
   endpoint from `tracker_read` (the `read` ones) or `tracker_call` (the rest),
   validating arguments with `z.strictObject(def.input)`. Two dispatchers rather
   than one because MCP annotations are per tool: that is what keeps reads out of

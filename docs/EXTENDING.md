@@ -112,7 +112,7 @@ A tool is one endpoint, so adding one starts by opening its page.
    `run` body are kept in step by hand — re-read them together before you commit.
    `npm run build` proves it compiles; the README's smoke test proves the server
    still lists. A new endpoint does not show up in `tools/list` — it shows up in
-   `tracker_api`'s catalogue, so check it there and call it once through the
+   `tracker_api`'s listing of its section, so check it there and call it once through the
    dispatcher its `effect` selects.
 
 ## Checking a change
@@ -144,9 +144,10 @@ For the end-to-end path, run the README's stdio smoke test against
 - **Tool surface.** Three tools reach 179 endpoints, so the registry can keep
   growing without `tools/list` growing with it: a new endpoint costs one
   catalogue line (~95 bytes) instead of a full schema (~730 bytes on average).
-  The catalogue is the thing to watch — if it stops fitting comfortably in a
-  description, split `tracker_api` into a section index plus a per-section
-  listing before reaching for anything cleverer.
+  The description holds only the section index, because hosts cut a tool
+  description at about 2 KB (Claude Code at 2048 characters); the full
+  catalogue outgrew that long ago. Keep the index under it — a section blurb is
+  one line, not a paragraph.
 - **Response size.** Responses are raw Tracker JSON, and issue objects are large.
   Trim them with the API's own `fields` and `expand` parameters — never by
   filtering in the server.
